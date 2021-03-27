@@ -11,7 +11,7 @@
 
 
 
-<p align="center"> Este projeto foi desenvolvido utilizando a biblioteca <a href="https://d3js.org/"> D3.js </a> e o <a href="https://observablehq.com/@d3/bar-chart-race"> Gráfico de Corrida </a> disponivel na sua lista de exemplos.
+<p align="justify"> Este projeto foi desenvolvido utilizando a biblioteca <a href="https://d3js.org/"> D3.js </a> e o <a href="https://observablehq.com/@d3/bar-chart-race"> Gráfico de Corrida </a> disponivel na sua lista de exemplos.
 No corpo do código há uma função javascript que faz uma consulta na API de dados no site do <a href="https://servicodados.ibge.gov.br/api/docs/agregados?versao=3#api-acervo"> IBGE</a>. Os dados são tratados de acordo com os parâmetros exigido pelo código do gráfico de corrida. </p>
 
 

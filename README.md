@@ -2,7 +2,7 @@
 
 <h1 align="center">
   <br>
-  <img src="img/printGrafico.jpg" alt="Grafico Corrida" height="125" width="125">
+  <img src="img/printGrafico.jpg" alt="Grafico Corrida" height="400" width="400">
   <br>
 </h1>
   

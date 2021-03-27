@@ -15,5 +15,3 @@
 No corpo do código há uma função javascript que faz uma consulta na API de dados no site do <a href="https://servicodados.ibge.gov.br/api/docs/agregados?versao=3#api-acervo"> IBGE</a>. Os dados são tratados de acordo com os parâmetros exigido pelo código do gráfico de corrida. </p>
 
 
-
-

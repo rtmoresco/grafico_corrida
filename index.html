@@ -1,0 +1,295 @@
+ <!DOCTYPE html>
+<html>
+<head>
+	<title>D3 Tutorial</title>
+	<script src="http://d3js.org/d3.v5.min.js"></script>
+
+	<!--Trabalhando com array-->
+	<script src="https://d3js.org/d3-array.v2.min.js"></script>
+</head>
+<body>
+
+	<div>
+		
+	</div>
+	<script>
+		let url = 'https://servicodados.ibge.gov.br/api/v3/agregados/1612/periodos/1974|1975|1976|1977|1978|1979|1980|1981|1982|1983|1984|1985|1986|1987|1988|1989|1990|1991|1992|1993|1994|1995|1996|1997|1998|1999|2000|2001|2002|2003|2004|2005|2006|2007|2008|2009|2010|2011|2012|2013|2014|2015|2016|2017|2018|2019/variaveis/214?localidades=N6[5004700]&classificacao=81[all]'
+
+		class Producao {
+			constructor(data, nome, valor,cor) {
+				this.data = data
+				this.nome = nome
+				this.valor = valor
+				this.cor = cor
+			}
+		}
+
+		d3.json(url).then(function(dados){ 	
+			
+
+			function tratarDados(){	
+	  			let producao = Array()
+	  			ult_res = dados[0]["resultados"].length
+	  			for (var x=1; x < ult_res; x++){
+
+	  				nome = Object.entries(dados[0]["resultados"][x]["classificacoes"][0]["categoria"])
+
+	  				serie_ano = Object.entries(dados[0]["resultados"][x]["series"][0]["serie"])
+
+	  				ult_serie = serie_ano.length
+	  				for (var y=0; y < ult_serie; y++){
+	  					if (serie_ano[y][1] == "-" || serie_ano[y][1] == "..." ){
+	  						continue
+	  					}
+
+	  					p = new Producao(serie_ano[y][0], nome[0][1], serie_ano[y][1], x)
+	  					producao.push(p)
+	  				}  				
+			       
+			     }
+			    return producao
+			}
+
+			valores = Array.from(d3.rollup(tratarDados(), ([d]) => +d.valor , d => d.data, d => d.nome))
+						  .map(([data, d]) => [new Date(data), d])
+						  .sort(([a], [b]) => d3.ascending(a, b))
+
+			
+		
+			nomes = new Set(tratarDados().map(d => d.nome))
+
+			
+
+			var n = 10
+
+			function rank(valor) {	
+			  
+
+			  const data = Array.from(nomes, nome => ({nome, valor: valor(nome)}))
+			  data.sort((a, b) => d3.descending(a.valor, b.valor))
+			  for (let i = 0; i < data.length; ++i) 
+			  		data[i].rank = i < 13 ? i : 12
+			  
+			  return data
+			}
+
+			function key(){
+			
+			
+				var keyframes = []
+				var ka, a, kb, b, k = 10
+		
+				for([[ka, a], [kb, b]] of d3.pairs(valores)){	
+					 for(let i = 0; i < k; ++i) {
+					 		const t = i / k				 	
+					 		var l = new Date(ka) * (1 - t) + new Date(kb) * t				 	
+					 		keyframes.push([
+						      	new Date(l),
+						        rank(nome => (a.get(nome) || 0) * (1 - t) + (b.get(nome) || 0) * t)
+						      ])
+					 	
+				 		}
+				 }
+
+				 keyframes.push([kb, rank(nome => b.get(nome) || 0)])
+
+				 
+				 return keyframes
+
+			}  
+
+			keyframes = key()
+
+			var nameframes = d3.groups(keyframes.flatMap(([, data]) => data), d => d.nome)
+
+			var prev = new Map(nameframes.flatMap(([, d]) => d3.pairs(d, (a, b) => [b, a])))
+			
+
+
+			var next = new Map(nameframes.flatMap(([, data]) => d3.pairs(data)))
+
+			var width = 600
+			var height = 598
+
+			const svg = d3.select("body").append("svg")
+      				.attr("width",width)
+					.attr("height",height)
+
+
+			var barSize = 48
+			var margin = ({top: 16, right: 6, bottom: 6, left:0})
+
+			var y = d3.scaleBand()
+			    .domain(d3.range(n + 1))
+			    .rangeRound([margin.top, margin.top + barSize * (n + 1 + 0.1)])
+			    .padding(0.1)
+
+	    	var x = d3.scaleLinear([0, 1], [margin.left, width - margin.right])
+
+	    	valor = 0
+	    	function posicaoTexto(d){
+	    		if (d.rank == 0){
+	    			valor = d.valor
+	    		}
+	    		return d.valor < valor*(30/100) ? d.valor + valor*(30/100) : d.valor 
+	    	}
+
+	    	function textTween(a, b) {
+				  const i = d3.interpolateNumber(a, b);
+				  return function(t) {
+				    this.textContent = d3.format(',.0f')(i(t))
+				 }
+			}
+
+	    	function color(d) {
+
+			  const scale = d3.scaleOrdinal(d3.schemeTableau10)
+			
+			  e = tratarDados()
+			  if(e.some(r => r.nome !== undefined)){
+
+			    const categoryByName = new Map(e.map(r => [r.nome, r.cor]))
+			   
+			    scale.domain(Array.from(categoryByName.values()))
+			    var escala = scale(categoryByName.get(d.nome))
+			    return escala
+			  }
+			  return d => scale(d.nome)
+			}
+
+			function ticker(svg) {
+			  const now = svg.append("text")
+			      .style("font-size", '48px')
+			      .style("font-variant-numeric", "tabular-nums")
+			      .attr("text-anchor", "end")
+			      .attr("x", width - 6)
+			      .attr("y", margin.top + barSize * (n - 0.45))
+			      .attr("dy", "0.32em")
+			      .text(new Date(keyframes[0][0]).getFullYear())
+
+			  return ([date], transition) => {
+			    transition.end().then(() => now.text(new Date(date).getFullYear()))
+			  }
+			}
+
+
+      		var duration = 250
+
+      		function bars(svg) {
+		 
+
+			  //variavel que cria o svg na interface
+			  let bar = svg.append("g")
+			      .attr("fill-opacity", 0.5)
+			      .selectAll("rect")
+
+			  //este retorno será feito em updateBars 
+
+				 return ([date, dat], transition) => bar = bar // o valor de bar será processado e atribuido a variavel bar que será retornada na funcao updateBars
+				    .data(dat.slice(0, n), d => d.nome) // dado de 0 a 12
+				    .join( //Qualquer dados que já foi processado, será atualizado
+				      enter => enter.append("rect")
+				        .attr("fill", color)
+				        .attr("height", y.bandwidth())
+				        .attr("x", x(0))
+				        .attr("y", d => y((prev.get(d) || d).rank))
+				        .attr("width", d => x((prev.get(d) || d).valor) - x(0)),
+				      update => update,
+				      exit => exit.transition(transition).remove()
+				        .attr("y", d => y((next.get(d) || d).rank))
+				        .attr("width", d => x((next.get(d) || d).valor) - x(0))
+				    )
+				    .call(bar => bar.transition(transition) //chamada exexutada quando a funcao update ser executada
+				      .attr("y", d => y(d.rank))
+				      .attr("width", d => x(d.valor) - x(0)))						
+			}
+
+
+			function labels(svg) {
+			  let label = svg.append("g")
+			      .style("font", "bold 12px var(--sans-serif)")
+			      .style("font-variant-numeric", "tabular-nums")
+			      .attr("text-anchor", "end")
+			    .selectAll("text");
+
+			  return ([date, dat], transition) => label = label
+			    .data(dat.slice(0, n), d => d.nome)
+			    .join(
+			      enter => enter.append("text")
+			        .attr("transform", d => `translate(${x(posicaoTexto((prev.get(d) || d)))},${y((prev.get(d) || d).rank)})`)
+			        .attr("y", y.bandwidth() / 2)
+			        .attr("x", -6)
+			        .attr("dy", "-0.25em")
+			        .text(d => d.nome)
+			        .call(text => text.append("tspan")
+			          .attr("fill-opacity", 0.7)
+			          .attr("font-weight", "normal")
+			          .attr("x", -6)
+			          .attr("dy", "1.15em")),
+			      update => update,
+			      exit => exit.transition(transition).remove()			      	
+			        .attr("transform", d => `translate(${x(posicaoTexto((next.get(d) || d)))},${y((next.get(d) || d).rank)})`)
+			        .call(g => g.select("tspan").tween("text", d => textTween(d.valor, (next.get(d) || d).valor)))
+			    )
+			    .call(bar => bar.transition(transition)
+			      .attr("transform", d => `translate(${x(posicaoTexto(d))},${y(d.rank)})`)
+			      .call(g => g.select("tspan").tween("text", d => textTween((prev.get(d) || d).valor, d.valor))))
+			}
+
+			function axis(svg) {
+			  const g = svg.append("g")
+			      .attr("transform", `translate(0,${margin.top})`);
+
+			  const axis = d3.axisTop(x)
+			      .ticks(width / 160)
+			      .tickSizeOuter(0)
+			      .tickSizeInner(-barSize * (n + y.padding()));
+
+			  return (_, transition) => {
+			    g.transition(transition).call(axis);
+			    g.select(".tick:first-of-type text").remove();
+			    g.selectAll(".tick:not(:first-of-type) line").attr("stroke", "white");
+			    g.select(".domain").remove();
+			  }
+			}
+
+			
+			home(svg)
+
+      		async function home(svg){
+      			
+      			const updateBars = bars(svg)
+      			const updateLabels = labels(svg)
+      			const updateAxis = axis(svg)
+      			const updateTicker = ticker(svg)
+
+      			svg.node()
+			
+
+				for (const keyframe of keyframes) {
+					const transition = svg.transition()
+		        		.duration(duration)
+		        		.ease(d3.easeLinear)
+
+		        		x.domain([0, keyframe[1][0].valor])
+
+		        		updateAxis(keyframe, transition)
+
+		        		updateBars(keyframe, transition)
+
+		        		updateLabels(keyframe, transition)
+
+		        		updateTicker(keyframe, transition)
+
+
+		        		await transition.end()
+	      		}
+
+
+      		}
+			
+		})
+	</script>
+
+</body>
+</html>

@@ -7,7 +7,7 @@
 </h1>
   
 <h2 align="center">Demonstração do Projeto</h2>
-<p align="center"> Acesse este link e veja a versáo do projeto em execução. :point_right: :point_right: <a href="https://grafico-corrida-ivinhema-producao-agricola-g9ju4t5xk-rtmoresco.vercel.app/">Click Aqui. </a> </p>
+<p align="center"> Acesse este link e veja a versão do projeto em execução. :point_right: :point_right: <a href="https://grafico-corrida-ivinhema-producao-agricola-g9ju4t5xk-rtmoresco.vercel.app/">Click Aqui. </a> </p>
 
 
 
